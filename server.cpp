@@ -183,7 +183,7 @@ void serve_local_file(int client_socket, string path) {
     // (When the requested file does not exist):
     // * Generate a correct response
 
-    //Content mapping
+    // Content mapping
     map<string, string> CONTENT_TYPE_MAPPING = {
         { "html", "text/html; charset=UTF-8" },
         { "jpg", "image/jpeg" },
@@ -191,22 +191,15 @@ void serve_local_file(int client_socket, string path) {
     };
     const string file_path = path;
 
-
-    //TODO: FILE NOT FOUND ERROR
-    char not_found_response[] = "HTTP/1.0 200 OK\r\n"
-                    "Content-Type: text/plain; charset=UTF-8\r\n"
-                    "Content-Length: 15\r\n"
-                    "\r\n"
-                    "Sample response";
+    // Confirm file exists
     ifstream f(path.c_str());
-
     if (f.good() == 1) {
         ifstream input( path, ios::binary );
 
         // Copies all data into buffer
         vector<unsigned char> buffer(istreambuf_iterator<char>(input), {});
 
-        //Allocating response
+        // Allocating response
         string response = "HTTP/1.0 200 OK\r\n"
                     "Content-Type: " + CONTENT_TYPE_MAPPING[file_path.substr(file_path.find('.'))] + "\r\n"
                     "Content-Length: " + to_string(buffer.size()) + "\r\n"
@@ -215,11 +208,18 @@ void serve_local_file(int client_socket, string path) {
         char* response_array = new char[response.length() + buffer.size() + 1]; 
         strcpy(response_array, response.c_str());
 
+        // Sending response and clean up
         send(client_socket, response_array, strlen(response_array), 0);
         send(client_socket, reinterpret_cast<char*>(buffer.data()), buffer.size(), 0);
         delete[] response_array; 
     }
 
+    // Default to file not found error
+    char not_found_response[] = "HTTP/1.0 404 Not Found\r\n"
+                    "Content-Type: text/plain; charset=UTF-8\r\n"
+                    "Content-Length: 15\r\n"
+                    "\r\n"
+                    "File not found!";
     send(client_socket, not_found_response, strlen(not_found_response), 0);
 }
 
