@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -180,23 +181,28 @@ void serve_local_file(int client_socket, const char *path) {
         //Opening file
         FILE* fptr = fopen(path, "r");
 
-        //Allocating file buffer
-        int size = BUFFER_SIZE;
-        char *file_content = (char*)malloc(size);
+        //Reading file
+        string file = "";
         char c;
-        int i = 0;
 
         while((c = fgetc(fptr)) != EOF) {
-            if(i >= size -1) {
-                size *= 2;
-                file_content = (char*)realloc(file_content, size);
-            }
-            // printf ("%c", c); 
-            file_content[i] = c;
-            i++;
+            file += char(c);
         }
         fclose(fptr);
-        printf("%s", file_content);
+        cout << file;
+        //Allocating response
+        int length = file.length();
+        string response = "HTTP/1.0 200 OK\r\n"
+                    "Content-Type: text/plain; charset=UTF-8\r\n"
+                    "Content-Length: " + to_string(length) + "\r\n"
+                    "\r\n" + file;
+
+                      
+        char* response_array = new char[response.length() + 1]; 
+        strcpy(response_array, response.c_str());       
+
+        send(client_socket, response_array, strlen(response_array), 0);
+        delete[] response_array; 
 
 
     }
