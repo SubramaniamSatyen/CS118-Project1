@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iterator>
 #include <vector>
+#include <regex>
 
 using namespace std;
 
@@ -161,13 +162,15 @@ void handle_request(struct server_app *app, int client_socket) {
         file_name = "./index.html";
     file_name = regex_replace(file_name, regex("%20"), " ");
 
-    // TODO: Implement proxy and call the function under condition
-    // specified in the spec
-    // if (need_proxy(...)) {
-    //    proxy_remote_file(app, client_socket, file_name);
-    // } else {
-    serve_local_file(client_socket, file_name);
-    //}
+    // Implement proxy and call the function under condition
+    if (file_name.find(".ts") != string::npos) {
+        //proxy_remote_file(app, client_socket, file_name.c_str());
+        proxy_remote_file(app, client_socket, buffer);
+    
+    } 
+    else {
+        serve_local_file(client_socket, file_name);
+    }
     free(request);
 }
 
@@ -230,7 +233,42 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     // Bonus:
     // * When connection to the remote server fail, properly generate
     // HTTP 502 "Bad Gateway" response
+    int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    const char SERVER[] = "131.179.176.34";
+    const int PORT = 5001;
 
+    printf("creating socket\n");
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER, &serv_addr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n");
+    }
+
+    printf("connect to socket\n");
+    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        printf("\nConnection Failed \n");
+    }
+
+    // send request
+    send(client_socket, request, BUFFER_SIZE, NULL);
+    ssize_t bytes_read = recv(client_socket, NULL, 0, 0);
+    printf("%d",bytes_read);
+
+
+
+    //send(sock, request, strlen(request), 0);
+    //valread = read(sock, buffer, 1024);
+    //send(client_socket, buffer, strlen(buffer), 0);
+
+    
+    // TODO: Modify to provide Bad Gateway request
     char response[] = "HTTP/1.0 501 Not Implemented\r\n\r\n";
     send(client_socket, response, strlen(response), 0);
 }   
