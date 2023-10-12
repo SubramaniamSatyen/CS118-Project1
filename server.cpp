@@ -10,6 +10,10 @@
 #include <sys/socket.h>
 #include <string>
 #include <iostream>
+#include <map>
+#include <fstream>
+#include <iterator>
+#include <vector>
 
 using namespace std;
 
@@ -39,7 +43,7 @@ void parse_args(int argc, char *argv[], struct server_app *app);
 
 // The following functions need to be updated
 void handle_request(struct server_app *app, int client_socket);
-void serve_local_file(int client_socket, const char *path);
+void serve_local_file(int client_socket, string path);
 void proxy_remote_file(struct server_app *app, int client_socket, const char *path);
 
 // The main function is provided and no change is needed
@@ -129,7 +133,6 @@ void parse_args(int argc, char *argv[], struct server_app *app)
 
 void handle_request(struct server_app *app, int client_socket) {
     char buffer[BUFFER_SIZE];
-    char file_name[] = "index.html";
     ssize_t bytes_read;
 
     // Read the request from HTTP client
@@ -157,22 +160,18 @@ void handle_request(struct server_app *app, int client_socket) {
     if (file_name == "./")
         file_name = "./index.html";
 
-    char *file_name_char = (char*)malloc(file_name.length() + 1);
-    strcpy(file_name_char, file_name.c_str());       
-
 
     // TODO: Implement proxy and call the function under condition
     // specified in the spec
     // if (need_proxy(...)) {
     //    proxy_remote_file(app, client_socket, file_name);
     // } else {
-    serve_local_file(client_socket, file_name_char);
+    serve_local_file(client_socket, file_name);
     //}
     free(request);
-    free(file_name_char);
 }
 
-void serve_local_file(int client_socket, const char *path) {
+void serve_local_file(int client_socket, string path) {
     // TODO: Properly implement serving of local files
     // The following code returns a dummy response for all requests
     // but it should give you a rough idea about what a proper response looks like
@@ -184,41 +183,41 @@ void serve_local_file(int client_socket, const char *path) {
     // (When the requested file does not exist):
     // * Generate a correct response
 
+    //Content mapping
+    map<string, string> CONTENT_TYPE_MAPPING = {
+        { "html", "text/html; charset=UTF-8" },
+        { "jpg", "image/jpeg" },
+        { "txt", "text/plain; charset=UTF-8" }
+    };
+    const string file_path = path;
+
+
     //TODO: FILE NOT FOUND ERROR
     char not_found_response[] = "HTTP/1.0 200 OK\r\n"
                     "Content-Type: text/plain; charset=UTF-8\r\n"
                     "Content-Length: 15\r\n"
                     "\r\n"
                     "Sample response";
+    ifstream f(path.c_str());
 
-    if (access(path, F_OK) == 0) {
-        //Opening file
-        FILE* fptr = fopen(path, "r");
+    if (f.good() == 1) {
+        ifstream input( path, ios::binary );
 
-        //Reading file
-        string file = "";
-        char c;
+        // Copies all data into buffer
+        vector<unsigned char> buffer(istreambuf_iterator<char>(input), {});
 
-        while((c = fgetc(fptr)) != EOF) {
-            file += char(c);
-        }
-        fclose(fptr);
-        cout << file;
         //Allocating response
-        int length = file.length();
         string response = "HTTP/1.0 200 OK\r\n"
-                    "Content-Type: text/plain; charset=UTF-8\r\n"
-                    "Content-Length: " + to_string(length) + "\r\n"
-                    "\r\n" + file;
-
+                    "Content-Type: " + CONTENT_TYPE_MAPPING[file_path.substr(file_path.find('.'))] + "\r\n"
+                    "Content-Length: " + to_string(buffer.size()) + "\r\n"
+                    "\r\n";
                       
-        char* response_array = new char[response.length() + 1]; 
-        strcpy(response_array, response.c_str());       
+        char* response_array = new char[response.length() + buffer.size() + 1]; 
+        strcpy(response_array, response.c_str());
+        strcat(response_array, reinterpret_cast<char*>(buffer.data()));
 
         send(client_socket, response_array, strlen(response_array), 0);
         delete[] response_array; 
-
-
     }
 
     send(client_socket, not_found_response, strlen(not_found_response), 0);
