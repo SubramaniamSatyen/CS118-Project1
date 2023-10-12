@@ -172,10 +172,7 @@ void handle_request(struct server_app *app, int client_socket) {
 }
 
 void serve_local_file(int client_socket, string path) {
-    // TODO: Properly implement serving of local files
-    // The following code returns a dummy response for all requests
-    // but it should give you a rough idea about what a proper response looks like
-    // What you need to do 
+    // Implements the following logic
     // (when the requested file exists):
     // * Open the requested file
     // * Build proper response headers (see details in the spec), and send them
@@ -215,11 +212,7 @@ void serve_local_file(int client_socket, string path) {
     }
 
     // Default to file not found error
-    char not_found_response[] = "HTTP/1.0 404 Not Found\r\n"
-                    "Content-Type: text/plain; charset=UTF-8\r\n"
-                    "Content-Length: 15\r\n"
-                    "\r\n"
-                    "File not found!";
+    char not_found_response[] = "HTTP/1.0 404 Not Found\r\n\r\n";
     send(client_socket, not_found_response, strlen(not_found_response), 0);
 }
 
