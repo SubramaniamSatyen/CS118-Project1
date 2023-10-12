@@ -214,9 +214,9 @@ void serve_local_file(int client_socket, string path) {
                       
         char* response_array = new char[response.length() + buffer.size() + 1]; 
         strcpy(response_array, response.c_str());
-        strcat(response_array, reinterpret_cast<char*>(buffer.data()));
 
         send(client_socket, response_array, strlen(response_array), 0);
+        send(client_socket, reinterpret_cast<char*>(buffer.data()), buffer.size(), 0);
         delete[] response_array; 
     }
 
