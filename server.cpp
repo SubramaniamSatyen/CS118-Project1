@@ -186,6 +186,7 @@ void serve_local_file(int client_socket, string path) {
         { "jpg", "image/jpeg" },
         { "txt", "text/plain; charset=UTF-8" }
     };
+    string content_type = "application/octet-stream";
     const string file_path = path;
 
     // Confirm file exists
@@ -197,8 +198,12 @@ void serve_local_file(int client_socket, string path) {
         vector<unsigned char> buffer(istreambuf_iterator<char>(input), {});
 
         // Allocating response
+        if (file_path.substr(1).rfind('.') != string::npos){
+            content_type = CONTENT_TYPE_MAPPING[file_path.substr(file_path.rfind('.'))];
+        }
+
         string response = "HTTP/1.0 200 OK\r\n"
-                    "Content-Type: " + CONTENT_TYPE_MAPPING[file_path.substr(file_path.find('.'))] + "\r\n"
+                    "Content-Type: " + content_type + "\r\n"
                     "Content-Length: " + to_string(buffer.size()) + "\r\n"
                     "\r\n";
                       
