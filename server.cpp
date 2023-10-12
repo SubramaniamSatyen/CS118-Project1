@@ -155,11 +155,11 @@ void handle_request(struct server_app *app, int client_socket) {
     string req = buffer;
 
     int file_index = req.find(' ') + 1;
-    string file_name = "." + req.substr(file_index, req.find(' ', file_index) - file_index);
+    string file_name = "." + req.substr(file_index, req.find(" HTTP/", file_index) - file_index);
     
     if (file_name == "./")
         file_name = "./index.html";
-
+    file_name = regex_replace(file_name, regex("%20"), " ");
 
     // TODO: Implement proxy and call the function under condition
     // specified in the spec
