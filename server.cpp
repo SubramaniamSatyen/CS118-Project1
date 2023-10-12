@@ -147,15 +147,29 @@ void handle_request(struct server_app *app, int client_socket) {
     char *request = (char*)malloc(strlen(buffer) + 1);
     strcpy(request, buffer);
 
-    // TODO: Parse the header and extract essential fields, e.g. file name
-    // Hint: if the requested path is "/" (root), default to index.html
+    // Parse the header and extract essential fields, e.g. file name.
+    // If the requested path is "/" (root), default to index.html
+    string req = buffer;
+
+    int file_index = req.find(' ') + 1;
+    string file_name = "." + req.substr(file_index, req.find(' ', file_index) - file_index);
+    
+    if (file_name == "./")
+        file_name = "./index.html";
+
+    char *file_name_char = (char*)malloc(file_name.length() + 1);
+    strcpy(file_name_char, file_name.c_str());       
+
+
     // TODO: Implement proxy and call the function under condition
     // specified in the spec
     // if (need_proxy(...)) {
     //    proxy_remote_file(app, client_socket, file_name);
     // } else {
-    serve_local_file(client_socket, file_name);
+    serve_local_file(client_socket, file_name_char);
     //}
+    free(request);
+    free(file_name_char);
 }
 
 void serve_local_file(int client_socket, const char *path) {
