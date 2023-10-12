@@ -176,6 +176,30 @@ void serve_local_file(int client_socket, const char *path) {
                     "\r\n"
                     "Sample response";
 
+    if (access(path, F_OK) == 0) {
+        //Opening file
+        FILE* fptr = fopen(path, "r");
+
+        //Allocating file buffer
+        int size = BUFFER_SIZE;
+        char *file_content = (char*)malloc(size);
+        char c;
+        int i = 0;
+
+        while((c = fgetc(fptr)) != EOF) {
+            if(i >= size -1) {
+                size *= 2;
+                file_content = (char*)realloc(file_content, size);
+            }
+            // printf ("%c", c); 
+            file_content[i] = c;
+            i++;
+        }
+        fclose(fptr);
+        printf("%s", file_content);
+
+
+    }
 
     send(client_socket, not_found_response, strlen(not_found_response), 0);
 }
