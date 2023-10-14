@@ -19,7 +19,7 @@
 using namespace std;
 
 /**
- * Project 1 starter code
+ * Project 1 content_leng_starter code
  * All parts needed to be changed/added are marked with TODO
  */
 
@@ -258,21 +258,22 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
 
     // send request
     send(sock, request, BUFFER_SIZE, 0);
-    char buffer[BUFFER_SIZE] = {0};
-    ssize_t bytes_read = recv(sock, buffer, BUFFER_SIZE, MSG_PEEK);
+    char server_response[BUFFER_SIZE] = {0};
+    
+    ssize_t bytes_read = recv(sock, server_response, BUFFER_SIZE, MSG_PEEK);
     // printf("%ld\n",bytes_read);
     printf("----\n%s\n----\n",request);
-    printf("----\n%s\n----\n", buffer);
+    printf("----\n%s\n----\n", server_response);
 
 
-    char* start = strstr(buffer,"Content-Length: " )+16;
-    char* end = strchr(start,' ');
-    int leng = end - start;
-    char* number = (char*) malloc(leng);
-    strncpy(number, start, leng);
+    char* content_leng_start = strstr(server_response,"Content-Length: " )+16;
+    char* content_leng_end = strchr(content_leng_start,'\r');
+    int content_leng_substr = content_leng_end - content_leng_start;
+    char* content_leng = (char*) malloc(content_leng_substr); // FREE THIS 
+    strncpy(content_leng, content_leng_start, content_leng_substr);
     
-    printf("number: %s\n", number);
-    int file_size = atoi(number);
+    int file_size = atoi(content_leng);
+    printf("string of number: %s\n", content_leng);
     printf("file size : %d\n", file_size);
 
 
@@ -286,5 +287,6 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     // TODO: Modify to provide Bad Gateway request
     char response[] = "HTTP/1.0 501 Not Implemented\r\n\r\n";
     send(client_socket, response, strlen(response), 0);
-    free(number);
+    
+    free(content_leng);
 }   
