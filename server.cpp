@@ -251,38 +251,39 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
         printf("\nInvalid address/ Address not supported \n");
     }
 
-    printf("connect to socket\n");
+    // printf("connect to socket\n");
     if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         printf("\nConnection Failed \n");
     }
 
     // send request
-    printf("sending request\n");
+    // printf("sending request\n");
     send(sock, request, BUFFER_SIZE, 0);
     char server_response[BUFFER_SIZE] = {0};
     
-    printf("reading response\n");
+    // printf("reading response\n");
     ssize_t bytes_read = recv(sock, server_response, BUFFER_SIZE, MSG_PEEK);
     // printf("%ld\n",bytes_read);
     // printf("----\n%s\n----\n",request);
-    printf("----\n%s\n----\n", server_response);
+    // printf("----\n%s\n----\n", server_response);
 
 
     //find the size of the file
     char* content_leng_start = strstr(server_response,"Content-Length: " )+16;
     char* content_leng_end = strchr(content_leng_start,'\r');
     int content_leng_substr = content_leng_end - content_leng_start;
-    char* content_leng = (char*) malloc(content_leng_substr); // FREE THIS 
+    char* content_leng = (char*) malloc(content_leng_substr); // FREE THIS
     strncpy(content_leng, content_leng_start, content_leng_substr);
-    
     int file_size = atoi(content_leng);
-    printf("string of number: %s\n", content_leng);
-    printf("file size : %d\n", file_size);
+    // printf("string of number: %s\n", content_leng);
+    // printf("file size : %d\n", file_size);
 
     //get the full response
     char full_server_message[file_size + BUFFER_SIZE] = {0};
     recv(sock, full_server_message, file_size + BUFFER_SIZE, 0);
     send(client_socket, full_server_message, file_size + BUFFER_SIZE, 0);
+
+    // printf("\n---full server message\n%s\n--file size\n %d\n", full_server_message, file_size+BUFFER_SIZE);
 
 
     //send(sock, request, strlen(request), 0);
@@ -291,8 +292,8 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
 
     
     // TODO: Modify to provide Bad Gateway request
-    char response[] = "HTTP/1.0 501 Not Implemented\r\n\r\n";
-    send(client_socket, response, strlen(response), 0);
+    // char response[] = "HTTP/1.0 501 Not Implemented\r\n\r\n";
+    // send(client_socket, response, strlen(response), 0);
     
     free(content_leng);
 }   
