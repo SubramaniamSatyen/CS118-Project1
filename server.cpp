@@ -237,8 +237,9 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     // HTTP 502 "Bad Gateway" response
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    const char SERVER[] = "131.179.176.34";
-    const int PORT = 5001;
+    const char* SERVER = app->remote_host;
+    const int PORT = app->remote_port;
+    
 
     // printf("creating socket\n");
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
