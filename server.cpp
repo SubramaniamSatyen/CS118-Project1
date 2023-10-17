@@ -162,6 +162,7 @@ void handle_request(struct server_app *app, int client_socket) {
     if (file_name == "./")
         file_name = "./index.html";
     file_name = regex_replace(file_name, regex("%20"), " ");
+    file_name = regex_replace(file_name, regex("%25"), "%");
 
     // Implement proxy and call the function under condition
     if (file_name.find(".ts") != string::npos) {
