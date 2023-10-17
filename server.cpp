@@ -44,8 +44,8 @@ void parse_args(int argc, char *argv[], struct server_app *app);
 
 // The following functions need to be updated
 void handle_request(struct server_app *app, int client_socket);
-void serve_local_file(int client_socket, string path);
-void proxy_remote_file(struct server_app *app, int client_socket, const char *path);
+void serve_local_file(int client_socket, string path, string version);
+void proxy_remote_file(struct server_app *app, int client_socket, const char *path, string version);
 
 // The main function is provided and no change is needed
 int main(int argc, char *argv[])
@@ -157,7 +157,8 @@ void handle_request(struct server_app *app, int client_socket) {
 
     int file_index = req.find(' ') + 1;
     string file_name = "." + req.substr(file_index, req.find(" HTTP/", file_index) - file_index);
-    
+    string version = req.substr(req.find("HTTP/"), 8);
+
     if (file_name == "./")
         file_name = "./index.html";
     file_name = regex_replace(file_name, regex("%20"), " ");
@@ -165,16 +166,16 @@ void handle_request(struct server_app *app, int client_socket) {
     // Implement proxy and call the function under condition
     if (file_name.find(".ts") != string::npos) {
         //proxy_remote_file(app, client_socket, file_name.c_str());
-        proxy_remote_file(app, client_socket, buffer);
+        proxy_remote_file(app, client_socket, buffer, version);
     
     } 
     else {
-        serve_local_file(client_socket, file_name);
+        serve_local_file(client_socket, file_name, version);
     }
     free(request);
 }
 
-void serve_local_file(int client_socket, string path) {
+void serve_local_file(int client_socket, string path, string version) {
     // Implements the following logic
     // (when the requested file exists):
     // * Open the requested file
@@ -205,7 +206,7 @@ void serve_local_file(int client_socket, string path) {
             content_type = CONTENT_TYPE_MAPPING[file_path.substr(file_path.rfind('.'))];
         }
 
-        string response = "HTTP/1.0 200 OK\r\n"
+        string response = version + " 200 OK\r\n"
                     "Content-Type: " + content_type + "\r\n"
                     "Content-Length: " + to_string(buffer.size()) + "\r\n"
                     "\r\n";
@@ -220,11 +221,11 @@ void serve_local_file(int client_socket, string path) {
     }
 
     // Default to file not found error
-    char not_found_response[] = "HTTP/1.0 404 Not Found\r\n\r\n";
-    send(client_socket, not_found_response, strlen(not_found_response), 0);
+    string error_404 = version + " 404 Not Found\r\n\r\n";
+    send(client_socket, error_404.c_str(), strlen(error_404.c_str()), 0);
 }
 
-void proxy_remote_file(struct server_app *app, int client_socket, const char *request) {
+void proxy_remote_file(struct server_app *app, int client_socket, const char *request, string version) {
     // TODO: Implement proxy request and replace the following code
     // What's needed:
     // * Connect to remote server (app->remote_server/app->remote_port)
@@ -292,8 +293,8 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
 
     
     // TODO: Modify to provide Bad Gateway request
-    // char response[] = "HTTP/1.0 501 Not Implemented\r\n\r\n";
-    // send(client_socket, response, strlen(response), 0);
+    // string bad_gateway = version + " 501 Not Implemented\r\n\r\n";
+    // send(client_socket, bad_gateway.c_str(), strlen(bad_gateway.c_str()), 0);
     
     free(content_leng);
 }   
