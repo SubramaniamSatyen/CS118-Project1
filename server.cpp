@@ -261,7 +261,7 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     // printf("connect to socket\n");
     if (connect(video_server_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         printf("\nConnection Failed \n");
-        string error_502 = version + "502 Bad Gateway\r\n\r\n";
+        string error_502 = version + " 502 Bad Gateway\r\n\r\n";
         send(client_socket,error_502.c_str(), error_502.length(),0);
         return;
     }
