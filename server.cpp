@@ -167,7 +167,7 @@ void handle_request(struct server_app *app, int client_socket) {
     // Implement proxy and call the function under condition
     if (file_name.find(".ts") != string::npos) {
         //proxy_remote_file(app, client_socket, file_name.c_str());
-        proxy_remote_file(app, client_socket, buffer, version);
+        proxy_remote_file(app, client_socket, request, version);
     
     } 
     else {
@@ -235,18 +235,22 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     // Bonus:
     // * When connection to the remote server fail, properly generate
     // HTTP 502 "Bad Gateway" response
-    int sock = 0, valread;
+    int video_server_sock = 0, valread;
     struct sockaddr_in serv_addr;
     const char* SERVER = app->remote_host;
     const int PORT = app->remote_port;
     
 
+    /*
+        create connection with socket
+    */
     // printf("creating socket\n");
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((video_server_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
     }
 
     serv_addr.sin_family = AF_INET;
+    // serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(PORT);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
@@ -255,48 +259,78 @@ void proxy_remote_file(struct server_app *app, int client_socket, const char *re
     }
 
     // printf("connect to socket\n");
-    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    if (connect(video_server_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         printf("\nConnection Failed \n");
     }
 
+    
+    /*
+        create our own request to the server
+        may not be necessary
+    */
     // send request
     // printf("sending request\n");
-    send(sock, request, BUFFER_SIZE, 0);
-    char server_response[BUFFER_SIZE] = {0};
+    // char newreq[] = "GET /output8.ts HTTP/1.1\r\nHost: 131.179.176.34:5001\r\n\r\n";
+    int size = strlen(request);
+    char method_line[size];
+    strncpy(method_line, request, size);
+
+    char *holder = strchr(method_line,'\n');
+    *(holder+1) = '\0';
+  
+    string new_request=string(method_line)+"HOST: "+string(SERVER)+":"+to_string(PORT)+"\r\n"
+    "Accept: video/MP2T,text/html;charset=utf-8\r\n\r\n";
+    // printf("request: %s\n\n",request);
+    // printf("created request: \n%s",new_request.c_str());
+
+
+    /*
+        send a request to the proxy server
+    */
+    send(video_server_sock, new_request.c_str(), BUFFER_SIZE, 0);
     
-    // printf("reading response\n");
-    ssize_t bytes_read = recv(sock, server_response, BUFFER_SIZE, MSG_PEEK);
-    // printf("%ld\n",bytes_read);
-    // printf("----\n%s\n----\n",request);
-    // printf("----\n%s\n----\n", server_response);
+    
+    /*
+        send the entire file over in one
+    */
+    // char server_response[BUFFER_SIZE] = {0};
+    // // printf("reading response\n");
+    // ssize_t bytes_read = recv(video_server_sock, server_response, BUFFER_SIZE, MSG_PEEK);
+    // // printf("%ld\n",bytes_read);
+    // printf("\nour request ----\n%s\n----\n",new_request.c_str());
+    // printf("\n server response----\n%s\n----\n", server_response);
+    // //find the size of the file
+    // char* content_leng_start = strstr(server_response,"Content-Length: " )+16;
+    // char* content_leng_end = strchr(content_leng_start,'\r');
+    // int content_leng_substr = content_leng_end - content_leng_start;
+    // char* content_leng = (char*) malloc(content_leng_substr); // FREE THIS
+    // strncpy(content_leng, content_leng_start, content_leng_substr);
+    // int file_size = atoi(content_leng);
+    // // printf("string of number: %s\n", content_leng);
+    // // printf("file size : %d\n", file_size);
+    // char message[file_size + BUFFER_SIZE];
+    // printf("getting mesage \n");
+    // recv(video_server_sock, server_response, BUFFER_SIZE+file_size, 0);
+    // printf("sending message \n");
+    // send(client_socket, message,BUFFER_SIZE+file_size, 0);
+    // printf("done \n");
+    // free(content_leng);
 
 
-    //find the size of the file
-    char* content_leng_start = strstr(server_response,"Content-Length: " )+16;
-    char* content_leng_end = strchr(content_leng_start,'\r');
-    int content_leng_substr = content_leng_end - content_leng_start;
-    char* content_leng = (char*) malloc(content_leng_substr); // FREE THIS
-    strncpy(content_leng, content_leng_start, content_leng_substr);
-    int file_size = atoi(content_leng);
-    // printf("string of number: %s\n", content_leng);
-    // printf("file size : %d\n", file_size);
 
-    //get the full response
-    char full_server_message[file_size + BUFFER_SIZE] = {0};
-    recv(sock, full_server_message, file_size + BUFFER_SIZE, 0);
-    send(client_socket, full_server_message, file_size + BUFFER_SIZE, 0);
-
-    // printf("\n---full server message\n%s\n--file size\n %d\n", full_server_message, file_size+BUFFER_SIZE);
-
-
-    //send(sock, request, strlen(request), 0);
-    //valread = read(sock, buffer, 1024);
-    //send(client_socket, buffer, strlen(buffer), 0);
+    /*
+        send the message over in chunks
+    */
+    ssize_t bytes_read;
+    char full_server_message[BUFFER_SIZE];
+    while((bytes_read=recv(video_server_sock, full_server_message, BUFFER_SIZE, 0)) > 0){
+        // printf("\n---full server message\n%s\n--file size\n %ld\n", full_server_message, 0);
+        send(client_socket, full_server_message, bytes_read, 0);
+    }
 
     
     // TODO: Modify to provide Bad Gateway request
     // string bad_gateway = version + " 501 Not Implemented\r\n\r\n";
     // send(client_socket, bad_gateway.c_str(), strlen(bad_gateway.c_str()), 0);
     
-    free(content_leng);
 }   
