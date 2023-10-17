@@ -187,9 +187,9 @@ void serve_local_file(int client_socket, string path, string version) {
 
     // Content mapping
     map<string, string> CONTENT_TYPE_MAPPING = {
-        { "html", "text/html; charset=UTF-8" },
-        { "jpg", "image/jpeg" },
-        { "txt", "text/plain; charset=UTF-8" }
+        { ".html", "text/html; charset=UTF-8" },
+        { ".jpg", "image/jpeg" },
+        { ".txt", "text/plain; charset=UTF-8" }
     };
     string content_type = "application/octet-stream";
     const string file_path = path;
